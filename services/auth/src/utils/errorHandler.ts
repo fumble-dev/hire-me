@@ -3,6 +3,7 @@ export default class ErrorHandler extends Error {
 
   constructor(statusCode: number, message: string) {
     super(message);
+    console.log("error",message)
     this.statusCode = statusCode;
     Error.captureStackTrace(this, this.constructor);
   }
