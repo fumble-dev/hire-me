@@ -1,7 +1,15 @@
 import app from "./app.js";
 import dotenv from "dotenv";
 import { sql } from "./utils/db.js";
+import { createClient } from "redis";
 dotenv.config();
+export const redisClient = createClient({
+    url: process.env.Redis_Url,
+});
+redisClient
+    .connect()
+    .then(() => console.log("connected to redis"))
+    .catch((err) => console.error(err));
 async function initDb() {
     try {
         // Create ENUM if not exists
