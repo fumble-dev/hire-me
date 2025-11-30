@@ -252,3 +252,84 @@ export const deleteSkillFromUser = TryCatch(
   }
 );
 
+export const applyForJob = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const user = req.user;
+  if (!user) {
+    throw new ErrorHandler(401, "Authentication Required");
+  }
+
+  if (user.role !== "jobseeker") {
+    throw new ErrorHandler(403, "Forbidden: You are not allowed for this API");
+  }
+
+  const applicant_id = user.user_id;
+
+  const resume = user.resume;
+  if (!resume) {
+    throw new ErrorHandler(
+      400,
+      "You need to add resume in your profile to apply for this job"
+    );
+  }
+
+  const { job_id } = req.body;
+  if (!job_id) {
+    throw new ErrorHandler(400, "Job Id is required");
+  }
+
+  const [job] = await sql`
+    SELECT is_active FROM jobs WHERE job_id = ${job_id}
+  `;
+
+  if (!job) {
+    throw new ErrorHandler(404, "No jobs with this id");
+  }
+
+  if (!job.is_active) {
+    throw new ErrorHandler(400, "Job is not accepting applications");
+  }
+
+  const now = Date.now();
+  const subTime = user.subscription ? new Date(user.subscription).getTime() : 0;
+
+  const isSubscribed = subTime > now;
+
+  let newApplication;
+
+  try {
+    [newApplication] = await sql`
+      INSERT INTO applications 
+        (job_id, applicant_id, applicant_email, resume, subscribed)
+      VALUES
+        (${job_id}, ${applicant_id}, ${user.email}, ${resume}, ${isSubscribed})
+      RETURNING *
+    `;
+  } catch (error: any) {
+    if (error.code === "23505") {
+      throw new ErrorHandler(409, "You have already applied to this job");
+    }
+    throw error;
+  }
+
+  res.json({
+    message: "Applied for job successfully",
+    application: newApplication,
+  });
+});
+
+export const getAllApplications = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const applications = await sql`
+      SELECT 
+        a.*, 
+        j.title AS job_title, 
+        j.salary AS job_salary, 
+        j.location AS job_location
+      FROM applications a 
+      JOIN jobs j ON a.job_id = j.job_id 
+      WHERE a.applicant_id = ${req.user?.user_id}
+    `;
+
+    res.json(applications);
+  }
+);
