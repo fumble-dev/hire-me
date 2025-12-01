@@ -1,10 +1,11 @@
+import CareerGuide from "@/components/career-guide"
 import Hero from "@/components/hero"
-import { Button } from "@/components/ui/button"
 
 const Home = () => {
   return (
     <div>
       <Hero/>
+      <CareerGuide/>
     </div>
   )
 }
