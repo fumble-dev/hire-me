@@ -1,11 +1,13 @@
 import CareerGuide from "@/components/career-guide"
 import Hero from "@/components/hero"
+import ResumeAnalyzer from "@/components/resume-analyser"
 
 const Home = () => {
   return (
     <div>
       <Hero/>
       <CareerGuide/>
+      <ResumeAnalyzer/>
     </div>
   )
 }
