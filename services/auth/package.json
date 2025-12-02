@@ -15,9 +15,11 @@
   "description": "",
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "@types/cors": "^2.8.19",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "concurrently": "^9.2.1",
+    "cors": "^2.8.5",
     "datauri": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",

@@ -1,6 +1,6 @@
 "use client"
 
-import { CareerGuideResponse, utils_service } from '@/type'
+import { CareerGuideResponse } from '@/type'
 import axios from 'axios'
 import { ArrowRight, BookOpen, Briefcase, Lightbulb, Loader, Sparkles, Target, TrendingUp, X } from 'lucide-react'
 import React, { useState } from 'react'
@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from './ui/button'
 import { Label } from './ui/label'
 import { Input } from './ui/input'
+import { utils_service } from '@/context/AppContext'
+import toast from 'react-hot-toast'
 
 const CareerGuide = () => {
 
@@ -36,16 +38,16 @@ const CareerGuide = () => {
 
     const getCareerGuidance = async () => {
         if(skills.length === 0){
-            alert("Please add at lease one skill")
+            toast.error("Please add at lease one skill")
             return;
         }
         setLoading(true)
         try {
             const {data} = await axios.post(`${utils_service}/api/utils/career`,{skills:skills})
             setResponse(data)
-            alert("Career Guidance Generated")
+            toast.error("Career Guidance Generated")
         } catch (error:any) {
-            alert(error.response?.data?.message || "Something went wrong")
+            toast.error(error.response?.data?.message || "Something went wrong")
         }finally{
             setLoading(false)
         }

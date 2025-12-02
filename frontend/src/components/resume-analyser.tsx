@@ -14,15 +14,17 @@ import {
   FileText,
   Upload,
   CheckCircle2,
-  AlertTriangle,
   TrendingUp,
   Loader2,
   ArrowRight,
   FileCheck,
   Zap,
+  AlertTriangle,
 } from "lucide-react";
 import axios from "axios";
-import { ResumeAnalysisResponse, utils_service } from "@/type";
+import { ResumeAnalysisResponse } from "@/type";
+import { utils_service } from "@/context/AppContext";
+import { toast } from "react-hot-toast";
 
 const ResumeAnalyzer = () => {
   const [open, setOpen] = useState(false);
@@ -35,11 +37,11 @@ const ResumeAnalyzer = () => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       if (selectedFile.type !== "application/pdf") {
-        alert("Please upload a PDF file");
+        toast.error("Please upload a PDF file");
         return;
       }
       if (selectedFile.size > 5 * 1024 * 1024) {
-        alert("File size should be less than 5MB");
+        toast.error("File size should be less than 5MB");
         return;
       }
       setFile(selectedFile);
@@ -57,7 +59,7 @@ const ResumeAnalyzer = () => {
 
   const analyzeResume = async () => {
     if (!file) {
-      alert("Please upload a resume");
+      toast.error("Please upload a resume");
       return;
     }
 
@@ -71,9 +73,9 @@ const ResumeAnalyzer = () => {
         }
       );
       setResponse(data);
-      alert("Resume analyzed successfully!");
+      toast.success("Resume analyzed successfully!");
     } catch (error: any) {
-      alert(error.response?.data?.message || "Failed to analyze resume");
+      toast.error(error.response?.data?.message || "Failed to analyze resume");
       console.log(error);
     } finally {
       setLoading(false);
@@ -112,13 +114,11 @@ const ResumeAnalyzer = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 bg-secondary/30">
       <div className="text-center mb-12">
-        <div
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border bg
-red-50 dark:bg-red-950/30 mb-4"
-        >
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border bg-red-50 dark:bg-red-950/30 mb-4">
           <FileCheck size={16} className="text-red-500" />
           <span className="text-sm font-medium">AI-Powered ATS Analysis</span>
         </div>
+
         <h2 className="text-3xl md:text-4xl font-bold mb-4">
           Optimize Your Resume for ATS
         </h2>
@@ -153,16 +153,13 @@ red-50 dark:bg-red-950/30 mb-4"
                 <div className="space-y-4 py-4">
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed rounded-lg p-12 text-center cursor
-pointer hover:border-blue-500 transition-colors"
+                    className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:border-blue-500 transition-colors"
                   >
                     <div className="flex flex-col items-center gap-4">
-                      <div
-                        className="h-16 w-16 rounded-full bg-blue-100 dark:bg-blue
-900/30 flex items-center justify-center"
-                      >
+                      <div className="h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                         <Upload size={32} className="text-blue-600" />
                       </div>
+
                       <div>
                         <p className="font-medium mb-1">
                           {file ? file.name : "Click to upload your resume"}
@@ -171,6 +168,7 @@ pointer hover:border-blue-500 transition-colors"
                           PDF format only, maximum 5MB
                         </p>
                       </div>
+
                       {file && (
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle2 size={18} />
@@ -219,7 +217,7 @@ pointer hover:border-blue-500 transition-colors"
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
-                  {/* Overall Score */}
+                  {/* Score Card */}
                   <div
                     className={`p-6 rounded-lg ${getScoreBgColor(
                       response.atsScore
@@ -241,21 +239,19 @@ pointer hover:border-blue-500 transition-colors"
                   </div>
 
                   {/* Summary */}
-                  <div
-                    className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border 
-border-blue-200 dark:border-blue-800"
-                  >
+                  <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
                     <p className="text-sm leading-relaxed">
                       {response.summary}
                     </p>
                   </div>
 
-                  {/* Score Breakdown */}
+                  {/* Breakdown */}
                   <div>
                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                       <TrendingUp size={20} className="text-red-500" />
                       Detailed Score Breakdown
                     </h3>
+
                     <div className="grid md:grid-cols-2 gap-3">
                       {Object.entries(response.scoreBreakdown).map(
                         ([key, value]) => (
@@ -280,14 +276,12 @@ border-blue-200 dark:border-blue-800"
                   </div>
 
                   {/* Strengths */}
-                  <div
-                    className="p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border 
-border-green-200 dark:border-green-800"
-                  >
+                  <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
                     <h3 className="font-semibold mb-3 flex items-center gap-2">
                       <CheckCircle2 size={18} className="text-green-600" />
                       What Your Resume Does Well
                     </h3>
+
                     <ul className="space-y-2">
                       {response.strengths.map((strength, index) => (
                         <li
@@ -307,6 +301,7 @@ border-green-200 dark:border-green-800"
                       <AlertTriangle size={20} className="text-red-500" />
                       Recommendations for Improvement
                     </h3>
+
                     <div className="space-y-3">
                       {response.suggestions.map((suggestion, index) => (
                         <div key={index} className="p-4 rounded-lg border">
@@ -315,12 +310,14 @@ border-green-200 dark:border-green-800"
                               {suggestion.category}
                             </h4>
                             <span
-                              className={`text-xs px-2 py-1 rounded-full border 
-${getPriorityColor(suggestion.priority)}`}
+                              className={`text-xs px-2 py-1 rounded-full border ${getPriorityColor(
+                                suggestion.priority
+                              )}`}
                             >
                               {suggestion.priority}
                             </span>
                           </div>
+
                           <div className="space-y-2 text-sm">
                             <div>
                               <span className="font-medium opacity-70">
@@ -330,6 +327,7 @@ ${getPriorityColor(suggestion.priority)}`}
                                 {suggestion.issue}
                               </span>
                             </div>
+
                             <div>
                               <span className="font-medium opacity-70">
                                 Fix:{" "}
@@ -344,11 +342,7 @@ ${getPriorityColor(suggestion.priority)}`}
                     </div>
                   </div>
 
-                  <Button
-                    onClick={resetDialog}
-                    variant="outline"
-                    className="w-full"
-                  >
+                  <Button onClick={resetDialog} variant="outline" className="w-full">
                     Analyze Another Resume
                   </Button>
                 </div>
