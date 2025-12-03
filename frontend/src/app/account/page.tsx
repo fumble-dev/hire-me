@@ -1,0 +1,28 @@
+'use client'
+
+import Loading from '@/components/loading';
+import { useAppData } from '@/context/AppContext'
+import Info from './components/info';
+import { redirect } from 'next/navigation';
+
+const AccountPage = () => {
+
+    const {isAuth, user, loading} = useAppData();
+    
+    // if (!isAuth) redirect("/login");
+
+    if(loading) return <Loading/>
+
+  return (
+    <>
+    {
+        user &&
+        <div className='w-[90%] md:w-[60%] m-auto'>
+            <Info user={user} isYourAccount={true} />
+        </div>
+    }
+    </>
+  )
+}
+
+export default AccountPage

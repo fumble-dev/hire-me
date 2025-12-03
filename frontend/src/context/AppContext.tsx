@@ -6,7 +6,10 @@ import { Toaster, toast } from "react-hot-toast";
 import Cookies from "js-cookie";
 import axios from "axios";
 
-
+export const auth_service = 'http://localhost:3000'
+export const job_service = 'http://localhost:3003'
+export const user_service = 'http://localhost:3002'
+export const utils_service = 'http://localhost:3001'
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 

@@ -93,3 +93,8 @@ export interface AppContextType{
 export interface AppProivderProps{
   children:ReactNode;
 }
+
+export interface AccountProps{
+  user:User;
+  isYourAccount:boolean;
+}
