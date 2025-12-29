@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  addSkillToUser,
+  deleteSkillFromUser,
   getUserProfile,
   myProfile,
   updateProfilePic,
@@ -15,6 +17,8 @@ router.get("/me", isAuth, myProfile);
 router.put("/update/profile", isAuth, updateUserProfile);
 router.put("/update/pic", isAuth, uploadFile, updateProfilePic);
 router.put("/update/resume", isAuth, uploadFile, updateResume);
+router.post("/skill/add", isAuth, addSkillToUser);
+router.delete("/skill/delete", isAuth, deleteSkillFromUser);
 
 router.get("/:userId", isAuth, getUserProfile);
 

@@ -5,6 +5,11 @@ import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
 import axios from "axios";
 
+interface UploadResult {
+  url: string;
+  public_id: string;
+}
+
 export const myProfile = TryCatch(
   async (req: AuthenticatedRequest, res, next) => {
     const user = req.user;
@@ -12,11 +17,6 @@ export const myProfile = TryCatch(
     res.json(user);
   }
 );
-
-interface UploadResult {
-  url: string;
-  public_id: string;
-}
 
 export const getUserProfile = TryCatch(async (req, res, next) => {
   const { userId } = req.params;
@@ -201,6 +201,34 @@ export const addSkillToUser = TryCatch(
 
     res.json({
       message: `Skill ${skillName} is added successfully`,
+    });
+  }
+);
+
+export const deleteSkillFromUser = TryCatch(
+  async (req: AuthenticatedRequest, res, next) => {
+    const user = req.user;
+    if (!user) {
+      throw new ErrorHandler(401, "Authentication Required");
+    }
+
+    const { skillName } = req.body;
+    if (!skillName || skillName.trim() === "") {
+      throw new ErrorHandler(400, "Please Provide a skill name");
+    }
+
+    const result = await sql`
+      DELETE FROM user_skills WHERE user_id = ${user.user_id} 
+      AND skill_id = (SELECT skill_id FROM skills WHERE name = ${skillName.trim()} )
+      RETURNING user_id;
+    `;
+
+    if (result.length === 0) {
+      throw new ErrorHandler(404, `Skill ${skillName.trim()} was not found`);
+    }
+
+    res.json({
+      message: `Skill ${skillName.trim()} was deleted successfully`,
     });
   }
 );
