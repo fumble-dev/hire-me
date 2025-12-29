@@ -34,4 +34,33 @@ router.post("/upload", async (req: Request, res: Response) => {
   }
 });
 
+router.delete("/delete/:public_id", async (req: Request, res: Response) => {
+  try {
+    const { public_id } = req.body;
+
+    if (!public_id) {
+      return res.status(400).json({ message: "Public id is required" });
+    }
+
+    const result = await cloudinary.uploader.destroy(public_id);
+
+    if (result.result !== "ok") {
+      return res.status(404).json({
+        message: "Image not found or already deleted",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Company logo deleted successfully",
+    });
+  } catch (error) {
+    console.error("Cloudinary delete error:", error);
+    res.status(500).json({
+      message: "Failed to delete image",
+    });
+  }
+});
+
+
 export default router;

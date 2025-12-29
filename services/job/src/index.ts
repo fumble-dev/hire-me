@@ -34,20 +34,22 @@ async function initDb() {
             )
         `;
 
-    await sql`
-        CREATE TABLE IF NOT EXISTS jobs(
-            job_id SERIAL PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
-            description TEXT NOT NULL,
-            salary NUMERIC(10,2),
-            location VARCHAR(255),
-            job_type job_type NOT NULL,
-            openings NUMERIC(3,1) NOT NULL,
-            work_location work_location NOT NULL,
-            company_id INTEGER NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
-            posted_by_recruiter_id INTEGER NOT NULL,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
+    await sql` 
+        CREATE TABLE IF NOT EXISTS jobs (
+        job_id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        role VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        salary NUMERIC(10,2),
+        location VARCHAR(255),
+        job_type job_type NOT NULL,
+        work_location work_location NOT NULL,
+        openings INTEGER NOT NULL,
+        company_id INTEGER NOT NULL REFERENCES companies(company_id) ON DELETE CASCADE,
+        posted_by_recruiter_id INTEGER NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
     `;
 
     await sql`
