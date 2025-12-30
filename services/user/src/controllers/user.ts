@@ -1,3 +1,4 @@
+import { application } from "express";
 import { AuthenticatedRequest } from "../middleware/auth.js";
 import { getBuffer } from "../utils/buffer.js";
 import { sql } from "../utils/db.js";
@@ -232,3 +233,100 @@ export const deleteSkillFromUser = TryCatch(
     });
   }
 );
+
+export const applyForJob = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const user = req.user;
+  if (!user) throw new ErrorHandler(401, "Authentication required");
+
+  if (user.role !== "jobseeker") {
+    throw new ErrorHandler(403, "Forbidden");
+  }
+
+  const jobId = Number(req.body.job_id);
+  if (!jobId || Number.isNaN(jobId)) {
+    throw new ErrorHandler(400, "Valid job_id is required");
+  }
+
+  if (!user.resume) {
+    throw new ErrorHandler(400, "Add resume to your profile before applying");
+  }
+
+  const [job] = await sql`
+    SELECT is_active FROM jobs WHERE job_id = ${jobId}
+  `;
+  if (!job) throw new ErrorHandler(404, "Job not found");
+
+  if (!job.is_active) {
+    throw new ErrorHandler(400, "Job is no longer accepting applications");
+  }
+
+  const isSubscribed =
+    user.subscription && new Date(user.subscription).getTime() > Date.now();
+
+  let newApplication;
+  try {
+    [newApplication] = await sql`
+      INSERT INTO applications (
+        job_id,
+        applicant_id,
+        applicant_email,
+        resume,
+        subscribed
+      )
+      VALUES (
+        ${jobId},
+        ${user.user_id},
+        ${user.email},
+        ${user.resume},
+        ${isSubscribed}
+      )
+      RETURNING *;
+    `;
+  } catch (error: any) {
+    if (error.code === "23505") {
+      throw new ErrorHandler(409, "Already applied for this job");
+    }
+    throw error;
+  }
+
+  res.json({
+    message: "Applied for job successfully",
+    application: newApplication,
+  });
+});
+
+export const getAllApplications = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const user = req.user;
+
+    if (!user) {
+      throw new ErrorHandler(401, "Authentication required");
+    }
+
+    if (user.role !== "jobseeker") {
+      throw new ErrorHandler(
+        403,
+        "Forbidden: Only jobseekers can view applications"
+      );
+    }
+
+    const applications = await sql`
+      SELECT 
+        a.application_id,
+        a.status,
+        a.applied_at,
+        a.subscribed,
+        j.job_id,
+        j.title AS job_title,
+        j.salary AS job_salary,
+        j.location AS job_location
+      FROM applications a
+      JOIN jobs j ON a.job_id = j.job_id
+      WHERE a.applicant_id = ${user.user_id}
+      ORDER BY a.applied_at DESC
+    `;
+
+    res.json(applications);
+  }
+);
+
