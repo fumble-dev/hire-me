@@ -4,6 +4,8 @@ import { getBuffer } from "../utils/buffer";
 import { sql } from "../utils/db";
 import ErrorHandler from "../utils/errorHandler";
 import { TryCatch } from "../utils/TryCatch";
+import { applicationStatusUpdateTemplate } from "../template";
+import { publishToTopic } from "../producer";
 
 interface UploadResult {
   url: string;
@@ -354,6 +356,75 @@ export const getAllApplicationForJob = TryCatch(
       ORDER BY subscribed DESC, applied_at ASC
     `;
 
-    res.json(applications)
+    res.json(applications);
+  }
+);
+
+export const updateApplication = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const user = req.user;
+    if (!user) {
+      throw new ErrorHandler(401, "Authentication Required");
+    }
+
+    if (user.role !== "recruiter") {
+      throw new ErrorHandler(403, "Only recruiters can update applications");
+    }
+
+    const applicationId = Number(req.params.id);
+    if (!applicationId || Number.isNaN(applicationId)) {
+      throw new ErrorHandler(400, "Invalid application id");
+    }
+
+    const { status } = req.body;
+
+    const allowedStatuses = ["Submitted", "Rejected", "Hired"];
+    if (!allowedStatuses.includes(status)) {
+      throw new ErrorHandler(400, "Invalid application status");
+    }
+
+    const [application] = await sql`
+      SELECT * FROM applications WHERE application_id = ${applicationId}
+    `;
+
+    if (!application) {
+      throw new ErrorHandler(404, "Application not found");
+    }
+
+    const [job] = await sql`
+      SELECT posted_by_recruiter_id, title
+      FROM jobs
+      WHERE job_id = ${application.job_id}
+    `;
+
+    if (!job) {
+      throw new ErrorHandler(404, "Job not found");
+    }
+
+    if (job.posted_by_recruiter_id !== user.user_id) {
+      throw new ErrorHandler(403, "Forbidden: Not your job posting");
+    }
+
+    const [updatedApplication] = await sql`
+      UPDATE applications
+      SET status = ${status}
+      WHERE application_id = ${applicationId}
+      RETURNING *;
+    `;
+
+    // fire-and-forget email notification
+    publishToTopic("send-mail", {
+      to: application.applicant_email,
+      subject: "Application Update - HireMe",
+      html: applicationStatusUpdateTemplate(job.title),
+    }).catch((err) => {
+      console.error("Kafka publish failed:", err);
+    });
+
+    res.json({
+      message: "Application updated successfully",
+      job,
+      updatedApplication
+    });
   }
 );
