@@ -1,5 +1,5 @@
 "use client"
-import { CareerGuideResponse, utils_service } from '@/type'
+import { CareerGuideResponse } from '@/type'
 import axios from 'axios'
 import { ArrowRight, BookOpen, Briefcase, Lightbulb, Loader, Sparkles, Target, TrendingUp, X } from 'lucide-react'
 import React, { useState } from 'react'
@@ -14,6 +14,8 @@ import {
 import { Button } from './ui/button'
 import { Label } from './ui/label'
 import { Input } from './ui/input'
+import { utils_service } from '@/context/AppContext'
+import toast from 'react-hot-toast'
 
 const CareerGuide = () => {
 
@@ -42,7 +44,7 @@ const CareerGuide = () => {
 
   const getCareerGuidance = async () => {
     if (skills.length === 0) {
-      alert('please add atleast one skill')
+      toast('please add atleast one skill')
       return
     }
 
@@ -54,9 +56,9 @@ const CareerGuide = () => {
         { skills }
       )
       setResponse(data)
-      alert('career guidance generated')
+      toast('career guidance generated')
     } catch (error) {
-      alert(String(error))
+      toast(String(error))
     } finally {
       setLoading(false)
     }

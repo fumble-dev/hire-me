@@ -151,7 +151,8 @@ router.post("/career", async (req, res) => {
 
 router.post("/resume-analyser", async (req, res) => {
   try {
-    const {pdfBase64} = req.body;
+    const { pdfBase64 } = req.body;
+
     if (!pdfBase64) {
       return res.status(400).json({
         message: "PDF data is required",
@@ -159,101 +160,82 @@ router.post("/resume-analyser", async (req, res) => {
     }
 
     const prompt = `
-          You are an expert ATS (Applicant Tracking System) analyzer. Analyze the following resume
-          and provide:
-          1. An ATS compatibility score (0-100)
-          2. Detailed suggestions to improve the resume for better ATS performance
-          Your entire response must be in valid JSON format. Do not include any text or markdown
-          formatting outside of the JSON structure.
-          The JSON object should have the following structure:
+You are an expert ATS (Applicant Tracking System) analyzer. Analyze the following resume
+and provide:
+1. An ATS compatibility score (0-100)
+2. Detailed suggestions to improve the resume for better ATS performance
 
-          {
-          "atsScore": 85,
-          "scoreBreakdown": {
-          "formatting": {
-          "score": 90,
-          "feedback": "Brief feedback on formatting"
-          },
-          "keywords": {
-          "score": 80,
-          "feedback": "Brief feedback on keyword usage"
-          },
-          "structure": {
-          "score": 85,
-          "feedback": "Brief feedback on resume structure"
-          },
-          "readability": {
-          "score": 88,
-          "feedback": "Brief feedback on readability"
-          }
-          },
-          "suggestions": [
-          {
-          "category": "Category name (e.g., 'Formatting', 'Content', 'Keywords',
-          'Structure')",
-          "issue": "Description of the issue found",
-          "recommendation": "Specific actionable recommendation to fix it",
-          "priority": "high/medium/low"
-          }
-          ],
-          "strengths": [
-          "List of things the resume does well for ATS"
-          ],
-          "summary": "A brief 2-3 sentence summary of the overall ATS performance"
-          }
-          Focus on:
-          - File format and structure compatibility
-          - Proper use of standard section headings
-          - Keyword optimization
-          - Formatting issues (tables, columns, graphics, special characters)
-          - Contact information placement
-          - Date formatting
-          - Use of action verbs and quantifiable achievements
-          - Section organization and flow
-    `;
+Your entire response must be in valid JSON format.
+Do not include any text or markdown outside the JSON.
+
+JSON structure:
+
+{
+  "atsScore": 85,
+  "scoreBreakdown": {
+    "formatting": { "score": 90, "feedback": "Brief feedback" },
+    "keywords": { "score": 80, "feedback": "Brief feedback" },
+    "structure": { "score": 85, "feedback": "Brief feedback" },
+    "readability": { "score": 88, "feedback": "Brief feedback" }
+  },
+  "suggestions": [
+    {
+      "category": "Formatting | Content | Keywords | Structure",
+      "issue": "Issue description",
+      "recommendation": "Actionable fix",
+      "priority": "high | medium | low"
+    }
+  ],
+  "strengths": ["Strength 1", "Strength 2"],
+  "summary": "2-3 sentence summary"
+}
+`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: [{
-        role:"user",
-        parts:[{
-          text:prompt,
-          
-        },{
-          inlineData:{
-            mimeType:"application/pdf",
-            data:pdfBase64.replace(/^data:application\/pdf; base64,/, "")
-          }
-        }]
-      }],
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: "application/pdf",
+                data: pdfBase64.replace(
+                  /^data:application\/pdf;base64,/,
+                  ""
+                ),
+              },
+            },
+          ],
+        },
+      ],
     });
 
-    let jsonResponse;
+    const rawText =
+      response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-    try {
-      const rawText = response.text
-        ?.replace(/```json/g, "")
-        .replace(/```/g, "")
-        .trim();
-
-      if (!rawText) {
-        throw new Error("Ai did not return a valid text response");
-      }
-
-      jsonResponse = JSON.parse(rawText);
-    } catch (error) {
+    if (!rawText) {
       return res.status(500).json({
-        message: "Ai returned response that was not valid",
-        rawResponse: response.text,
+        message: "AI did not return any text response",
+      });
+    }
+
+    let jsonResponse;
+    try {
+      jsonResponse = JSON.parse(rawText);
+    } catch {
+      return res.status(500).json({
+        message: "AI returned invalid JSON",
+        rawResponse: rawText,
       });
     }
 
     res.json(jsonResponse);
-
   } catch (error) {
-    console.error("Cloudinary delete error:", error);
+    console.error("Resume analyser error:", error);
     res.status(500).json({
-      message: "Failed to delete image",
+      message: "Failed to analyze resume",
     });
   }
 });

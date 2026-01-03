@@ -9,6 +9,10 @@ export const redisClient = createClient({
   url: process.env.Redis_Url,
 });
 
+redisClient.on("error", (err) => {
+  console.error("Redis Client Error:", err);
+});
+
 redisClient
   .connect()
   .then(() => {
